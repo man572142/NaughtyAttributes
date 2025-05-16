@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace NaughtyAttributes.Editor
 {
-    [CustomPropertyDrawer(typeof(TagAttribute))]
+    [CustomPropertyDrawer(typeof(TagAttribute), true)]
     public class TagPropertyDrawer : PropertyDrawerBase
     {
         protected override float GetPropertyHeight_Internal(SerializedProperty property, GUIContent label)

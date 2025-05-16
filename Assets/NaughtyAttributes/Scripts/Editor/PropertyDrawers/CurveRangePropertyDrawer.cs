@@ -3,7 +3,7 @@ using UnityEditor;
 
 namespace NaughtyAttributes.Editor
 {
-    [CustomPropertyDrawer(typeof(CurveRangeAttribute))]
+    [CustomPropertyDrawer(typeof(CurveRangeAttribute), true)]
     public class CurveRangePropertyDrawer : PropertyDrawerBase
     {
         protected override float GetPropertyHeight_Internal(SerializedProperty property, GUIContent label)

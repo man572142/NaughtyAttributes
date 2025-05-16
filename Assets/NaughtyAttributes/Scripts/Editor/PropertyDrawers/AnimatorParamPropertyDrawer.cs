@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace NaughtyAttributes.Editor
 {
-    [CustomPropertyDrawer(typeof(AnimatorParamAttribute))]
+    [CustomPropertyDrawer(typeof(AnimatorParamAttribute), true)]
     public class AnimatorParamPropertyDrawer : PropertyDrawerBase
     {
         private const string InvalidAnimatorControllerWarningMessage = "Target animator controller is null";

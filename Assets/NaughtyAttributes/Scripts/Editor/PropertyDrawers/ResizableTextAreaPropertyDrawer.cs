@@ -5,7 +5,7 @@ using System;
 
 namespace NaughtyAttributes.Editor
 {
-    [CustomPropertyDrawer(typeof(ResizableTextAreaAttribute))]
+    [CustomPropertyDrawer(typeof(ResizableTextAreaAttribute), true)]
     public class ResizableTextAreaPropertyDrawer : PropertyDrawerBase
     {
         protected override float GetPropertyHeight_Internal(SerializedProperty property, GUIContent label)

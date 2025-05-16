@@ -11,21 +11,21 @@ namespace NaughtyAttributes.Editor
 
     public static class ValidatorAttributeExtensions
     {
-        private static Dictionary<Type, PropertyValidatorBase> _validatorsByAttributeType;
+        private static Dictionary<string, PropertyValidatorBase> _validatorsByAttributeType;
 
         static ValidatorAttributeExtensions()
         {
-            _validatorsByAttributeType = new Dictionary<Type, PropertyValidatorBase>();
-            _validatorsByAttributeType[typeof(MinValueAttribute)] = new MinValuePropertyValidator();
-            _validatorsByAttributeType[typeof(MaxValueAttribute)] = new MaxValuePropertyValidator();
-            _validatorsByAttributeType[typeof(RequiredAttribute)] = new RequiredPropertyValidator();
-            _validatorsByAttributeType[typeof(ValidateInputAttribute)] = new ValidateInputPropertyValidator();
+            _validatorsByAttributeType = new Dictionary<string, PropertyValidatorBase>();
+            _validatorsByAttributeType[nameof(MinValueAttribute)] = new MinValuePropertyValidator();
+            _validatorsByAttributeType[nameof(MaxValueAttribute)] = new MaxValuePropertyValidator();
+            _validatorsByAttributeType[nameof(RequiredAttribute)] = new RequiredPropertyValidator();
+            _validatorsByAttributeType[nameof(ValidateInputAttribute)] = new ValidateInputPropertyValidator();
         }
 
         public static PropertyValidatorBase GetValidator(this ValidatorAttribute attr)
         {
             PropertyValidatorBase validator;
-            if (_validatorsByAttributeType.TryGetValue(attr.GetType(), out validator))
+            if (_validatorsByAttributeType.TryGetValue(attr.GetType().Name, out validator))
             {
                 return validator;
             }

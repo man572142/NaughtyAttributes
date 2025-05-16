@@ -4,7 +4,7 @@ using System;
 
 namespace NaughtyAttributes.Editor
 {
-    [CustomPropertyDrawer(typeof(EnumFlagsAttribute))]
+    [CustomPropertyDrawer(typeof(EnumFlagsAttribute), true)]
     public class EnumFlagsPropertyDrawer : PropertyDrawerBase
     {
         protected override float GetPropertyHeight_Internal(SerializedProperty property, GUIContent label)

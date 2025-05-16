@@ -4,7 +4,7 @@ using System.Reflection;
 
 namespace NaughtyAttributes.Editor
 {
-    [CustomPropertyDrawer(typeof(ProgressBarAttribute))]
+    [CustomPropertyDrawer(typeof(ProgressBarAttribute), true)]
     public class ProgressBarPropertyDrawer : PropertyDrawerBase
     {
         protected override float GetPropertyHeight_Internal(SerializedProperty property, GUIContent label)

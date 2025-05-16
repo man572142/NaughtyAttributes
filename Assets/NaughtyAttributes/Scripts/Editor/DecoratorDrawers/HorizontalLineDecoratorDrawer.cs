@@ -3,7 +3,7 @@ using UnityEditor;
 
 namespace NaughtyAttributes.Editor
 {
-    [CustomPropertyDrawer(typeof(HorizontalLineAttribute))]
+    [CustomPropertyDrawer(typeof(HorizontalLineAttribute), true)]
     public class HorizontalLineDecoratorDrawer : DecoratorDrawer
     {
         public override float GetHeight()

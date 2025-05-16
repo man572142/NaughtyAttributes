@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace NaughtyAttributes.Editor
 {
-    [CustomPropertyDrawer(typeof(InputAxisAttribute))]
+    [CustomPropertyDrawer(typeof(InputAxisAttribute), true)]
     public class InputAxisPropertyDrawer : PropertyDrawerBase
     {
         private static readonly string AssetPath = Path.Combine("ProjectSettings", "InputManager.asset");

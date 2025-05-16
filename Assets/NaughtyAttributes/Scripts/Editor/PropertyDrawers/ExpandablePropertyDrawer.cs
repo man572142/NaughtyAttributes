@@ -3,7 +3,7 @@ using UnityEditor;
 
 namespace NaughtyAttributes.Editor
 {
-    [CustomPropertyDrawer(typeof(ExpandableAttribute))]
+    [CustomPropertyDrawer(typeof(ExpandableAttribute), true)]
     public class ExpandablePropertyDrawer : PropertyDrawerBase
     {
         protected override float GetPropertyHeight_Internal(SerializedProperty property, GUIContent label)

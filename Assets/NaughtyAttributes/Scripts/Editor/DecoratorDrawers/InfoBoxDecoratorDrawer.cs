@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace NaughtyAttributes.Editor
 {
-    [CustomPropertyDrawer(typeof(InfoBoxAttribute))]
+    [CustomPropertyDrawer(typeof(InfoBoxAttribute), true)]
     public class InfoBoxDecoratorDrawer : DecoratorDrawer
     {
         public override float GetHeight()
