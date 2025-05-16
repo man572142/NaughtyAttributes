@@ -18,18 +18,35 @@ namespace NaughtyAttributes
         Playmode
     }
 
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
+    public enum DisplayedArea
+    { 
+        Top,
+        Bottom,
+    }
+
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
     public class ButtonAttribute : SpecialCaseDrawerAttribute
     {
         public string Text { get; private set; }
-        public EButtonEnableMode SelectedEnableMode { get; private set; }
+        public EButtonEnableMode SelectedEnableMode;
         public object[] Args;
+        public string Method;
+        public DisplayedArea DisplayedArea = DisplayedArea.Bottom;
+
+        public ButtonAttribute()
+        {
+            this.Text = null;
+            this.SelectedEnableMode = EButtonEnableMode.Always;
+            this.Args = null;
+            this.Method = null;
+        }
 
         public ButtonAttribute(params object[] args)
         {
             this.Text = null;
             this.SelectedEnableMode = EButtonEnableMode.Always;
             this.Args = args;
+            this.Method = null;
         }
 
         public ButtonAttribute(string text = null, params object[] args)
@@ -37,13 +54,15 @@ namespace NaughtyAttributes
             this.Text = text;
             this.SelectedEnableMode = EButtonEnableMode.Always;
             this.Args = args;
+            this.Method = null;
         }
 
-        public ButtonAttribute(string text = null, EButtonEnableMode enabledMode = EButtonEnableMode.Always, params object[] args)
+        public ButtonAttribute(string text = null, string method = null, params object[] args)
         {
-            this.Text = text;
-            this.SelectedEnableMode = enabledMode;
+            this.Text = text ?? method;
+            this.SelectedEnableMode = EButtonEnableMode.Always;
             this.Args = args;
+            this.Method = method;
         }
     }
 }

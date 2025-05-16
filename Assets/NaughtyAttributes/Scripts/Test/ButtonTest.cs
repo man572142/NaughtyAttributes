@@ -5,21 +5,24 @@ namespace NaughtyAttributes.Test
 {
     public class ButtonTest : MonoBehaviour
     {
+        [Button(method: nameof(IncrementMyInt))]
         public int myInt;
 
-        [Button(enabledMode: EButtonEnableMode.Always)]
+        [Button(method: nameof(DecrementMyInt), DisplayedArea = DisplayedArea.Top)]
+        public int myInt2;
+
         private void IncrementMyInt()
         {
             myInt++;
         }
 
-        [Button("Decrement My Int", EButtonEnableMode.Editor)]
+        [Button("Decrement My Int", SelectedEnableMode = EButtonEnableMode.Editor)]
         private void DecrementMyInt()
         {
             myInt--;
         }
 
-        [Button(enabledMode: EButtonEnableMode.Playmode)]
+        [Button(SelectedEnableMode = EButtonEnableMode.Playmode)]
         private void LogMyInt(string prefix = "MyInt = ")
         {
             Debug.Log(prefix + myInt);

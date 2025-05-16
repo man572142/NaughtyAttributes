@@ -42,7 +42,8 @@ namespace NaughtyAttributes.Editor
         private static void PropertyField_Implementation(Rect rect, SerializedProperty property, bool includeChildren, PropertyFieldFunction propertyFieldFunction)
         {
             SpecialCaseDrawerAttribute specialCaseAttribute = PropertyUtility.GetAttribute<SpecialCaseDrawerAttribute>(property);
-            if (specialCaseAttribute != null)
+            ButtonAttribute buttonAttribute = specialCaseAttribute as ButtonAttribute;
+            if (specialCaseAttribute != null && buttonAttribute == null)
             {
                 specialCaseAttribute.GetDrawer().OnGUI(rect, property);
             }
@@ -68,13 +69,23 @@ namespace NaughtyAttributes.Editor
 
                 using (new EditorGUI.DisabledScope(disabled: !enabled))
                 {
+                    DrawButton(DisplayedArea.Top);
                     propertyFieldFunction.Invoke(rect, property, PropertyUtility.GetLabel(property), includeChildren);
+                    DrawButton(DisplayedArea.Bottom);
                 }
 
                 // Call OnValueChanged callbacks
                 if (EditorGUI.EndChangeCheck())
                 {
                     PropertyUtility.CallOnValueChangedCallbacks(property);
+                }
+            }
+
+            void DrawButton(DisplayedArea displayedArea)
+            {
+                if (buttonAttribute != null && buttonAttribute.DisplayedArea == displayedArea)
+                {
+                    Button(buttonAttribute, property);
                 }
             }
         }
@@ -132,24 +143,25 @@ namespace NaughtyAttributes.Editor
             }
         }
 
-        public static void Button(UnityEngine.Object target, MethodInfo methodInfo)
+        public static void Button(UnityEngine.Object target, MethodInfo methodInfo, DisplayedArea displayedArea)
         {
             bool visible = ButtonUtility.IsVisible(target, methodInfo);
             if (!visible)
             {
                 return;
             }
-            
+
             ButtonAttribute buttonAttribute = (ButtonAttribute)methodInfo.GetCustomAttributes(typeof(ButtonAttribute), true)[0];
+            if(buttonAttribute.DisplayedArea != displayedArea)
+            {
+                return;
+            }
+
             string buttonText = string.IsNullOrEmpty(buttonAttribute.Text) ? ObjectNames.NicifyVariableName(methodInfo.Name) : buttonAttribute.Text;
 
             bool buttonEnabled = ButtonUtility.IsEnabled(target, methodInfo);
 
-            EButtonEnableMode mode = buttonAttribute.SelectedEnableMode;
-            buttonEnabled &=
-                mode == EButtonEnableMode.Always ||
-                mode == EButtonEnableMode.Editor && !Application.isPlaying ||
-                mode == EButtonEnableMode.Playmode && Application.isPlaying;
+            EvaluateButtonEnable(ref buttonEnabled, buttonAttribute.SelectedEnableMode);
 
             bool methodIsCoroutine = methodInfo.ReturnType == typeof(IEnumerator);
             if (methodIsCoroutine)
@@ -157,42 +169,89 @@ namespace NaughtyAttributes.Editor
                 buttonEnabled &= (Application.isPlaying ? true : false);
             }
 
-            object[] args = buttonAttribute.Args;
-            if (args == null && methodInfo.GetParameters().All(p => p.IsOptional))
-            {
-                args = methodInfo.GetParameters().Select(p => p.DefaultValue).ToArray();
-            }
+            object[] args = buttonAttribute.GetUsableParameters(methodInfo);
 
             EditorGUI.BeginDisabledGroup(!buttonEnabled || args == null);
 
             if (GUILayout.Button(buttonText, _buttonStyle))
             {
-                IEnumerator methodResult = methodInfo.Invoke(target, args) as IEnumerator;
-
-                if (!Application.isPlaying)
-                {
-                    // Set target object and scene dirty to serialize changes to disk
-                    EditorUtility.SetDirty(target);
-
-                    PrefabStage stage = PrefabStageUtility.GetCurrentPrefabStage();
-                    if (stage != null)
-                    {
-                        // Prefab mode
-                        EditorSceneManager.MarkSceneDirty(stage.scene);
-                    }
-                    else
-                    {
-                        // Normal scene
-                        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
-                    }
-                }
-                else if (methodResult != null && target is MonoBehaviour behaviour)
-                {
-                    behaviour.StartCoroutine(methodResult);
-                }
+                ExecuteButtonMethod(target, methodInfo, args);
             }
 
             EditorGUI.EndDisabledGroup();
+        }
+
+        public static void Button(ButtonAttribute buttonAttribute, SerializedProperty property)
+        {
+            if (string.IsNullOrEmpty(buttonAttribute.Method))
+            {
+                EditorGUILayout.HelpBox($"Failed to display the {buttonAttribute.Text} button! \nTo use the [ButtonAttribute] on a field, you must provide the method name.", MessageType.Error);
+            }
+            else if (GUILayout.Button(buttonAttribute.Text))
+            {
+                Type targetObjType = property.serializedObject.targetObject.GetType();
+                var methodInfo = targetObjType
+                    .GetMethod(buttonAttribute.Method, BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly);
+
+                if (methodInfo != null)
+                {
+                    ExecuteButtonMethod(property.serializedObject.targetObject, methodInfo, buttonAttribute.GetUsableParameters(methodInfo));
+                }
+                else
+                {
+                    Debug.LogError($"Can't find the method:{buttonAttribute.Method}!");
+                }
+            }
+        }
+
+        private static object[] GetUsableParameters(this ButtonAttribute buttonAttribute, MethodInfo methodInfo)
+        {
+            object[] args = buttonAttribute.Args;
+            var parameters = methodInfo.GetParameters();
+            if (args == null && parameters.All(p => p.IsOptional))
+            {
+                args = parameters.Select(p => p.DefaultValue).ToArray();
+            }
+            else if (args != null && args.Length != parameters.Length)
+            {
+                Debug.LogError($"Parameter length isn't matched! Method:{methodInfo.Name} expected:{parameters.Length} current:{args.Length}");
+            }
+            return args;
+        }
+
+        private static void ExecuteButtonMethod(UnityEngine.Object target, MethodInfo methodInfo, object[] args)
+        {
+            IEnumerator methodResult = methodInfo.Invoke(target, args) as IEnumerator;
+
+            if (!Application.isPlaying)
+            {
+                // Set target object and scene dirty to serialize changes to disk
+                EditorUtility.SetDirty(target);
+
+                PrefabStage stage = PrefabStageUtility.GetCurrentPrefabStage();
+                if (stage != null)
+                {
+                    // Prefab mode
+                    EditorSceneManager.MarkSceneDirty(stage.scene);
+                }
+                else
+                {
+                    // Normal scene
+                    EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+                }
+            }
+            else if (methodResult != null && target is MonoBehaviour behaviour)
+            {
+                behaviour.StartCoroutine(methodResult);
+            }
+        }
+
+        private static void EvaluateButtonEnable(ref bool buttonEnabled, EButtonEnableMode mode)
+        {
+            buttonEnabled &=
+                mode == EButtonEnableMode.Always ||
+                mode == EButtonEnableMode.Editor && !Application.isPlaying ||
+                mode == EButtonEnableMode.Playmode && Application.isPlaying;
         }
 
         public static void NativeProperty_Layout(UnityEngine.Object target, PropertyInfo property)
