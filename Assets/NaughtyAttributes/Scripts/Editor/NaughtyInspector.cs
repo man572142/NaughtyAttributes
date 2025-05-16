@@ -11,21 +11,21 @@ namespace NaughtyAttributes.Editor
     public class NaughtyInspector : UnityEditor.Editor
     {
         private List<SerializedProperty> _serializedProperties = new List<SerializedProperty>();
-        private IEnumerable<FieldInfo> _nonSerializedFields;
-        private IEnumerable<PropertyInfo> _nativeProperties;
-        private IEnumerable<MethodInfo> _methods;
+        private List<FieldInfo> _nonSerializedFields;
+        private List<PropertyInfo> _nativeProperties;
+        private List<MethodInfo> _methods;
         private Dictionary<string, SavedBool> _foldouts = new Dictionary<string, SavedBool>();
 
         protected virtual void OnEnable()
         {
             _nonSerializedFields = ReflectionUtility.GetAllFields(
-                target, f => f.GetCustomAttributes(typeof(ShowNonSerializedFieldAttribute), true).Length > 0);
+                target, f => f.GetCustomAttributes(typeof(ShowNonSerializedFieldAttribute), true).Length > 0).ToList();
 
             _nativeProperties = ReflectionUtility.GetAllProperties(
-                target, p => p.GetCustomAttributes(typeof(ShowNativePropertyAttribute), true).Length > 0);
+                target, p => p.GetCustomAttributes(typeof(ShowNativePropertyAttribute), true).Length > 0).ToList();
 
             _methods = ReflectionUtility.GetAllMethods(
-                target, m => m.GetCustomAttributes(typeof(ButtonAttribute), true).Length > 0);
+                target, m => m.GetCustomAttributes(typeof(ButtonAttribute), true).Length > 0).ToList();
         }
 
         protected virtual void OnDisable()
