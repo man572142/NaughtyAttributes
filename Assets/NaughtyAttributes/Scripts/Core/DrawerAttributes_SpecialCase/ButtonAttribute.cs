@@ -23,11 +23,27 @@ namespace NaughtyAttributes
     {
         public string Text { get; private set; }
         public EButtonEnableMode SelectedEnableMode { get; private set; }
+        public object[] Args;
 
-        public ButtonAttribute(string text = null, EButtonEnableMode enabledMode = EButtonEnableMode.Always)
+        public ButtonAttribute(params object[] args)
+        {
+            this.Text = null;
+            this.SelectedEnableMode = EButtonEnableMode.Always;
+            this.Args = args;
+        }
+
+        public ButtonAttribute(string text = null, params object[] args)
+        {
+            this.Text = text;
+            this.SelectedEnableMode = EButtonEnableMode.Always;
+            this.Args = args;
+        }
+
+        public ButtonAttribute(string text = null, EButtonEnableMode enabledMode = EButtonEnableMode.Always, params object[] args)
         {
             this.Text = text;
             this.SelectedEnableMode = enabledMode;
+            this.Args = args;
         }
     }
 }
