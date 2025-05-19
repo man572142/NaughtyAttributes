@@ -26,8 +26,8 @@ namespace NaughtyAttributes.Test
             myInt--;
         }
 
-        [Button(text: "Method <color=yellow>Default</color>", SelectedEnableMode = EButtonEnableMode.Playmode)]
-        private void LogMyInt(string prefix = "MyInt = ")
+        [Button("Method <color=yellow>Default</color>")]
+        private void LogMyInt(string prefix)
         {
             Debug.Log(prefix + myInt);
         }

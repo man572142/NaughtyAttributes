@@ -225,12 +225,10 @@ namespace NaughtyAttributes.Editor
                 buttonEnabled &= (Application.isPlaying ? true : false);
             }
 
-            object[] args = buttonAttribute.GetUsableParameters(methodInfo);
-
-            EditorGUI.BeginDisabledGroup(!buttonEnabled || args == null);
+            EditorGUI.BeginDisabledGroup(!buttonEnabled);
             if (SizableButton(buttonAttribute))
             {
-                ExecuteButtonMethod(target, methodInfo, args);
+                ExecuteButtonMethod(target, methodInfo, buttonAttribute.GetUsableParameters(methodInfo));
             }
             EditorGUI.EndDisabledGroup();
         }
@@ -288,13 +286,25 @@ namespace NaughtyAttributes.Editor
         {
             object[] args = buttonAttribute.Args;
             var parameters = methodInfo.GetParameters();
-            if (args == null && parameters.All(p => p.IsOptional))
+            if(args == null || args.Length != parameters.Length)
             {
-                args = parameters.Select(p => p.DefaultValue).ToArray();
-            }
-            else if (args != null && args.Length != parameters.Length)
-            {
-                Debug.LogError($"Parameter length isn't matched! Method:{methodInfo.Name} expected:{parameters.Length} current:{args.Length}");
+                int originalLength = buttonAttribute.Args != null ? buttonAttribute.Args.Length : 0;
+                args = new object[parameters.Length];
+                for(int i = 0; i < parameters.Length;i++)
+                {
+                    if(i < originalLength)
+                    {
+                        args[i] = buttonAttribute.Args[i];
+                    }
+                    else if (parameters[i].HasDefaultValue)
+                    {
+                        args[i] = parameters[i].DefaultValue;
+                    }
+                    else
+                    {
+                        throw new ArgumentException($"Unmatched parameters length! TargetMethod:{parameters?.Length} Button:{buttonAttribute.Args?.Length}");
+                    }
+                }
             }
             return args;
         }
