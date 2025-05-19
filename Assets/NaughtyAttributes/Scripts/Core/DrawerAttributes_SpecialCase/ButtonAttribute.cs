@@ -45,7 +45,7 @@ namespace NaughtyAttributes
         HalfWidth = 1 << 8,
     }
 
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Field, AllowMultiple = true, Inherited = true)]
     public class ButtonAttribute : SpecialCaseDrawerAttribute
     {
         public string Text;

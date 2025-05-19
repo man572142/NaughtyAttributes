@@ -5,14 +5,12 @@ namespace NaughtyAttributes.Test
 {
     public class ButtonTest : MonoBehaviour
     {
-        [Button(text: "Field <color=yellow>FatBottom</color>", method: nameof(IncrementMyInt), DisplayOptions = DisplayOptions.FatBottom)]
+        [Button("Field <color=yellow>MiniTop</color>", nameof(IncrementMyInt), DisplayOptions = DisplayOptions.MiniTop)]
+        [Button("Field <color=yellow>FatBottom</color>", nameof(IncrementMyInt), DisplayOptions = DisplayOptions.FatBottom)]
         public int myInt;
 
-        [Button(text: "Field <color=yellow>Head</color>", method: nameof(DecrementMyInt), DisplayOptions = DisplayOptions.MiniTop)]
+        [Button("Field <color=yellow>AlongSide</color>", nameof(DecrementMyInt), DisplayOptions = DisplayOptions.AlongSide)]
         public int myInt2;
-
-        [Button(text: "Field <color=yellow>AlongSide</color>", method: nameof(DecrementMyInt), DisplayOptions = DisplayOptions.AlongSide)]
-        public int myInt3;
 
         [Button("Method <color=yellow>OnTop</color>", SelectedEnableMode = EButtonEnableMode.Editor, DisplayOptions = DisplayOptions.OnTop)]
         private void IncrementMyInt()
@@ -20,13 +18,13 @@ namespace NaughtyAttributes.Test
             myInt++;
         }
 
-        [Button("Method <color=yellow>FatBottom</color>", SelectedEnableMode = EButtonEnableMode.Editor, DisplayOptions = DisplayOptions.FatBottom)]
+        [Button("Method <color=yellow>Default</color>", SelectedEnableMode = EButtonEnableMode.Editor)]
         private void DecrementMyInt()
         {
             myInt--;
         }
 
-        [Button("Method <color=yellow>Default</color>")]
+        [Button("Method <color=yellow>FatBottom</color>", "", "zzz", DisplayOptions = DisplayOptions.FatBottom)]
         private void LogMyInt(string prefix)
         {
             Debug.Log(prefix + myInt);

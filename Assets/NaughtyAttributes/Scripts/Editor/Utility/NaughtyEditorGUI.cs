@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -12,23 +11,33 @@ namespace NaughtyAttributes.Editor
     {
         public struct FieldButtonScope : IDisposable
         {
-            private ButtonAttribute _button;
+            private SpecialCaseDrawerAttribute[] _attributes;
             private SerializedProperty _property;
 
-            public FieldButtonScope(ButtonAttribute buttonAttribute, SerializedProperty property)
+            public FieldButtonScope(SpecialCaseDrawerAttribute[] specialCaseAttributes, SerializedProperty property)
             {
-                _button = buttonAttribute;
+                _attributes = specialCaseAttributes ?? Array.Empty<SpecialCaseDrawerAttribute>();
                 _property = property;
 
-                if (_button != null)
+                bool hasHorizontalBegan = false;
+                for (int i = 0; i < _attributes.Length; i++)
                 {
-                    switch (_button.DisplayOptions.GetPosition())
+                    if (!(_attributes[i] is ButtonAttribute button))
+                    {
+                        continue;
+                    }
+
+                    switch (button.DisplayOptions.GetPosition())
                     {
                         case DisplayOptions.OnTop:
-                            FieldButton(_button, _property);
+                            FieldButton(button, _property);
                             break;
                         case DisplayOptions.AlongSide:
-                            EditorGUILayout.BeginHorizontal();
+                            if(!hasHorizontalBegan)
+                            {
+                                EditorGUILayout.BeginHorizontal();
+                                hasHorizontalBegan = true;
+                            }
                             break;
                     }
                 }
@@ -36,18 +45,28 @@ namespace NaughtyAttributes.Editor
 
             public void Dispose()
             {
-                if (_button != null)
+                bool hasHorizontalEnded = false;
+                for (int i = 0; i < _attributes.Length; i++)
                 {
-                    switch (_button.DisplayOptions.GetPosition())
+                    if (!(_attributes[i] is ButtonAttribute button))
+                    {
+                        continue;
+                    }
+
+                    switch (button.DisplayOptions.GetPosition())
                     {
                         case DisplayOptions.AlongSide:
-                            FieldButton(_button, _property);
-                            EditorGUILayout.EndHorizontal();
+                            FieldButton(button, _property);
+                            if (!hasHorizontalEnded)
+                            {
+                                EditorGUILayout.EndHorizontal();
+                                hasHorizontalEnded = true;
+                            }
                             break;
                         case DisplayOptions.AtBottom:
-                            FieldButton(_button, _property);
+                            FieldButton(button, _property);
                             break;
-                    } 
+                    }
                 }
             }
         }
@@ -107,43 +126,47 @@ namespace NaughtyAttributes.Editor
 
         private static void PropertyField_Implementation(Rect rect, SerializedProperty property, bool includeChildren, PropertyFieldFunction propertyFieldFunction)
         {
-            SpecialCaseDrawerAttribute specialCaseAttribute = PropertyUtility.GetAttribute<SpecialCaseDrawerAttribute>(property);
-            ButtonAttribute buttonAttribute = specialCaseAttribute as ButtonAttribute;
-            if (specialCaseAttribute != null && buttonAttribute == null)
+            SpecialCaseDrawerAttribute[] specialCaseAttributes = PropertyUtility.GetAttributes<SpecialCaseDrawerAttribute>(property);
+            if (specialCaseAttributes != null)
             {
-                specialCaseAttribute.GetDrawer().OnGUI(rect, property);
+                foreach(var specialCaseAttr in specialCaseAttributes)
+                {
+                    if(!(specialCaseAttr is ButtonAttribute))
+                    {
+                        specialCaseAttr.GetDrawer().OnGUI(rect, property);
+                        return;
+                    }
+                }
             }
-            else
+
+            // Check if visible
+            bool visible = PropertyUtility.IsVisible(property);
+            if (!visible)
             {
-                // Check if visible
-                bool visible = PropertyUtility.IsVisible(property);
-                if (!visible)
-                {
-                    return;
-                }
+                return;
+            }
 
-                // Validate
-                ValidatorAttribute[] validatorAttributes = PropertyUtility.GetAttributes<ValidatorAttribute>(property);
-                foreach (var validatorAttribute in validatorAttributes)
-                {
-                    validatorAttribute.GetValidator().ValidateProperty(property);
-                }
+            // Validate
+            ValidatorAttribute[] validatorAttributes = PropertyUtility.GetAttributes<ValidatorAttribute>(property);
+            foreach (var validatorAttribute in validatorAttributes)
+            {
+                validatorAttribute.GetValidator().ValidateProperty(property);
+            }
 
-                // Check if enabled and draw
-                EditorGUI.BeginChangeCheck();
-                bool enabled = PropertyUtility.IsEnabled(property);
+            // Check if enabled and draw
+            EditorGUI.BeginChangeCheck();
+            bool enabled = PropertyUtility.IsEnabled(property);
 
-                using (new EditorGUI.DisabledScope(disabled: !enabled))
-                using (new FieldButtonScope(buttonAttribute, property))
-                {
-                    propertyFieldFunction.Invoke(rect, property, PropertyUtility.GetLabel(property), includeChildren);
-                }
+            using (new EditorGUI.DisabledScope(disabled: !enabled))
+            using (new FieldButtonScope(specialCaseAttributes, property))
+            {
+                propertyFieldFunction.Invoke(rect, property, PropertyUtility.GetLabel(property), includeChildren);
+            }
 
-                // Call OnValueChanged callbacks
-                if (EditorGUI.EndChangeCheck())
-                {
-                    PropertyUtility.CallOnValueChangedCallbacks(property);
-                }
+            // Call OnValueChanged callbacks
+            if (EditorGUI.EndChangeCheck())
+            {
+                PropertyUtility.CallOnValueChangedCallbacks(property);
             }
         }
 
@@ -208,8 +231,16 @@ namespace NaughtyAttributes.Editor
                 return;
             }
 
-            ButtonAttribute buttonAttribute = (ButtonAttribute)methodInfo.GetCustomAttributes(typeof(ButtonAttribute), true)[0];
-            if(!buttonAttribute.DisplayOptions.Has(specifiedOption))
+            var buttons = methodInfo.GetCustomAttributes(typeof(ButtonAttribute), true);
+            foreach (ButtonAttribute button in buttons)
+            {
+                Button(target, methodInfo, specifiedOption, button);
+            }
+        }
+
+        private static void Button(UnityEngine.Object target, MethodInfo methodInfo, DisplayOptions specifiedOption, ButtonAttribute buttonAttribute)
+        {
+            if (!buttonAttribute.DisplayOptions.Has(specifiedOption))
             {
                 return;
             }
