@@ -44,12 +44,13 @@ namespace NaughtyAttributes.Editor
             }
             else
             {
+                DrawButtons(DisplayOptions.OnTop);
                 DrawSerializedProperties();
             }
 
             DrawNonSerializedFields();
             DrawNativeProperties();
-            DrawButtons();
+            DrawButtons(DisplayOptions.AtBottom);
         }
 
         protected void GetSerializedProperties(ref List<SerializedProperty> outSerializedProperties)
@@ -171,7 +172,7 @@ namespace NaughtyAttributes.Editor
             }
         }
 
-        protected void DrawButtons(bool drawHeader = false)
+        protected void DrawButtons(DisplayOptions specifiedOption, bool drawHeader = false)
         {
             if (_methods.Any())
             {
@@ -185,7 +186,7 @@ namespace NaughtyAttributes.Editor
 
                 foreach (var method in _methods)
                 {
-                    NaughtyEditorGUI.Button(serializedObject.targetObject, method);
+                    NaughtyEditorGUI.Button(serializedObject.targetObject, method, specifiedOption);
                 }
             }
         }

@@ -3,7 +3,6 @@ using System.Collections;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
-using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
@@ -11,6 +10,73 @@ namespace NaughtyAttributes.Editor
 {
     public static class NaughtyEditorGUI
     {
+        public struct FieldButtonScope : IDisposable
+        {
+            private ButtonAttribute _button;
+            private SerializedProperty _property;
+
+            public FieldButtonScope(ButtonAttribute buttonAttribute, SerializedProperty property)
+            {
+                _button = buttonAttribute;
+                _property = property;
+
+                if (_button != null)
+                {
+                    switch (_button.DisplayOptions.GetPosition())
+                    {
+                        case DisplayOptions.OnTop:
+                            FieldButton(_button, _property);
+                            break;
+                        case DisplayOptions.AlongSide:
+                            EditorGUILayout.BeginHorizontal();
+                            break;
+                    }
+                }
+            }
+
+            public void Dispose()
+            {
+                if (_button != null)
+                {
+                    switch (_button.DisplayOptions.GetPosition())
+                    {
+                        case DisplayOptions.AlongSide:
+                            FieldButton(_button, _property);
+                            EditorGUILayout.EndHorizontal();
+                            break;
+                        case DisplayOptions.AtBottom:
+                            FieldButton(_button, _property);
+                            break;
+                    } 
+                }
+            }
+        }
+
+        public struct CenterScope : IDisposable
+        {
+            private bool _isCenter;
+
+            public CenterScope(bool isCenter)
+            {
+                _isCenter = isCenter;
+
+                if(_isCenter)
+                {
+                    EditorGUILayout.BeginHorizontal();
+                    GUILayout.FlexibleSpace();
+                }
+            }
+
+            public void Dispose()
+            {
+                if (_isCenter)
+                {
+                    GUILayout.FlexibleSpace();
+                    EditorGUILayout.EndHorizontal();
+                }
+            }
+        }
+
         public const float IndentLength = 15.0f;
         public const float HorizontalSpacing = 2.0f;
 
@@ -42,7 +108,8 @@ namespace NaughtyAttributes.Editor
         private static void PropertyField_Implementation(Rect rect, SerializedProperty property, bool includeChildren, PropertyFieldFunction propertyFieldFunction)
         {
             SpecialCaseDrawerAttribute specialCaseAttribute = PropertyUtility.GetAttribute<SpecialCaseDrawerAttribute>(property);
-            if (specialCaseAttribute != null)
+            ButtonAttribute buttonAttribute = specialCaseAttribute as ButtonAttribute;
+            if (specialCaseAttribute != null && buttonAttribute == null)
             {
                 specialCaseAttribute.GetDrawer().OnGUI(rect, property);
             }
@@ -67,6 +134,7 @@ namespace NaughtyAttributes.Editor
                 bool enabled = PropertyUtility.IsEnabled(property);
 
                 using (new EditorGUI.DisabledScope(disabled: !enabled))
+                using (new FieldButtonScope(buttonAttribute, property))
                 {
                     propertyFieldFunction.Invoke(rect, property, PropertyUtility.GetLabel(property), includeChildren);
                 }
@@ -132,24 +200,24 @@ namespace NaughtyAttributes.Editor
             }
         }
 
-        public static void Button(UnityEngine.Object target, MethodInfo methodInfo)
+        public static void Button(UnityEngine.Object target, MethodInfo methodInfo, DisplayOptions specifiedOption)
         {
             bool visible = ButtonUtility.IsVisible(target, methodInfo);
             if (!visible)
             {
                 return;
             }
-            
-            ButtonAttribute buttonAttribute = (ButtonAttribute)methodInfo.GetCustomAttributes(typeof(ButtonAttribute), true)[0];
-            string buttonText = string.IsNullOrEmpty(buttonAttribute.Text) ? ObjectNames.NicifyVariableName(methodInfo.Name) : buttonAttribute.Text;
 
+            ButtonAttribute buttonAttribute = (ButtonAttribute)methodInfo.GetCustomAttributes(typeof(ButtonAttribute), true)[0];
+            if(!buttonAttribute.DisplayOptions.Has(specifiedOption))
+            {
+                return;
+            }
+
+            buttonAttribute.Text = string.IsNullOrEmpty(buttonAttribute.Text) ? ObjectNames.NicifyVariableName(methodInfo.Name) : buttonAttribute.Text;
             bool buttonEnabled = ButtonUtility.IsEnabled(target, methodInfo);
 
-            EButtonEnableMode mode = buttonAttribute.SelectedEnableMode;
-            buttonEnabled &=
-                mode == EButtonEnableMode.Always ||
-                mode == EButtonEnableMode.Editor && !Application.isPlaying ||
-                mode == EButtonEnableMode.Playmode && Application.isPlaying;
+            EvaluateButtonEnable(ref buttonEnabled, buttonAttribute.SelectedEnableMode);
 
             bool methodIsCoroutine = methodInfo.ReturnType == typeof(IEnumerator);
             if (methodIsCoroutine)
@@ -157,42 +225,113 @@ namespace NaughtyAttributes.Editor
                 buttonEnabled &= (Application.isPlaying ? true : false);
             }
 
-            object[] args = buttonAttribute.Args;
-            if (args == null && methodInfo.GetParameters().All(p => p.IsOptional))
-            {
-                args = methodInfo.GetParameters().Select(p => p.DefaultValue).ToArray();
-            }
+            object[] args = buttonAttribute.GetUsableParameters(methodInfo);
 
             EditorGUI.BeginDisabledGroup(!buttonEnabled || args == null);
-
-            if (GUILayout.Button(buttonText, _buttonStyle))
+            if (SizableButton(buttonAttribute))
             {
-                IEnumerator methodResult = methodInfo.Invoke(target, args) as IEnumerator;
+                ExecuteButtonMethod(target, methodInfo, args);
+            }
+            EditorGUI.EndDisabledGroup();
+        }
 
-                if (!Application.isPlaying)
+        // TODO: Doesn't work with ExpandableAttribute
+        public static void FieldButton(ButtonAttribute buttonAttribute, SerializedProperty property)
+        {
+            if (string.IsNullOrEmpty(buttonAttribute.Method))
+            {
+                EditorGUILayout.HelpBox($"Failed to display the {buttonAttribute.Text} button! \nTo use the [ButtonAttribute] on a field, you must provide the method name.", MessageType.Error);
+            }
+            else if (SizableButton(buttonAttribute))
+            {
+                Type targetObjType = property.serializedObject.targetObject.GetType();
+                var methodInfo = targetObjType
+                    .GetMethod(buttonAttribute.Method, BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly);
+
+                if (methodInfo != null)
                 {
-                    // Set target object and scene dirty to serialize changes to disk
-                    EditorUtility.SetDirty(target);
-
-                    PrefabStage stage = PrefabStageUtility.GetCurrentPrefabStage();
-                    if (stage != null)
-                    {
-                        // Prefab mode
-                        EditorSceneManager.MarkSceneDirty(stage.scene);
-                    }
-                    else
-                    {
-                        // Normal scene
-                        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
-                    }
+                    ExecuteButtonMethod(property.serializedObject.targetObject, methodInfo, buttonAttribute.GetUsableParameters(methodInfo));
                 }
-                else if (methodResult != null && target is MonoBehaviour behaviour)
+                else
                 {
-                    behaviour.StartCoroutine(methodResult);
+                    Debug.LogError($"Can't find the method:{buttonAttribute.Method}!");
                 }
             }
+        }
 
-            EditorGUI.EndDisabledGroup();
+        public static bool SizableButton(ButtonAttribute button)
+        {
+            if(button.DisplayOptions.GetPosition() == DisplayOptions.AlongSide)
+            {
+                return GUILayout.Button(button.Text, _buttonStyle);
+            }
+
+            var widthOption = button.DisplayOptions.GetWidthOption();
+            var heightOption = button.DisplayOptions.GetHeightOption();
+
+            bool isButtonClicked = false;
+            using (new CenterScope(widthOption != null))
+            {
+                int optionsCount = widthOption != null ? 1 : 0;
+                optionsCount += heightOption != null ? 1 : 0;
+                isButtonClicked = optionsCount switch
+                {
+                    1 => GUILayout.Button(button.Text, _buttonStyle, widthOption ?? heightOption),
+                    2 => GUILayout.Button(button.Text, _buttonStyle, widthOption, heightOption),
+                    _ => GUILayout.Button(button.Text, _buttonStyle),
+                }; 
+            }
+            return isButtonClicked;
+        }
+
+        private static object[] GetUsableParameters(this ButtonAttribute buttonAttribute, MethodInfo methodInfo)
+        {
+            object[] args = buttonAttribute.Args;
+            var parameters = methodInfo.GetParameters();
+            if (args == null && parameters.All(p => p.IsOptional))
+            {
+                args = parameters.Select(p => p.DefaultValue).ToArray();
+            }
+            else if (args != null && args.Length != parameters.Length)
+            {
+                Debug.LogError($"Parameter length isn't matched! Method:{methodInfo.Name} expected:{parameters.Length} current:{args.Length}");
+            }
+            return args;
+        }
+
+        private static void ExecuteButtonMethod(UnityEngine.Object target, MethodInfo methodInfo, object[] args)
+        {
+            IEnumerator methodResult = methodInfo.Invoke(target, args) as IEnumerator;
+
+            if (!Application.isPlaying)
+            {
+                // Set target object and scene dirty to serialize changes to disk
+                EditorUtility.SetDirty(target);
+
+                PrefabStage stage = PrefabStageUtility.GetCurrentPrefabStage();
+                if (stage != null)
+                {
+                    // Prefab mode
+                    EditorSceneManager.MarkSceneDirty(stage.scene);
+                }
+                else
+                {
+                    // Normal scene
+                    EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+                }
+            }
+            else if (methodResult != null && target is MonoBehaviour behaviour)
+            {
+                behaviour.StartCoroutine(methodResult);
+            }
+        }
+
+        private static void EvaluateButtonEnable(ref bool buttonEnabled, EButtonEnableMode mode)
+        {
+            buttonEnabled &=
+                mode == EButtonEnableMode.Always ||
+                mode == EButtonEnableMode.Editor && !Application.isPlaying ||
+                mode == EButtonEnableMode.Playmode && Application.isPlaying;
         }
 
         public static void NativeProperty_Layout(UnityEngine.Object target, PropertyInfo property)

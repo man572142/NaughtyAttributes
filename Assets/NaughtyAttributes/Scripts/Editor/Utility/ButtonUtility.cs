@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Reflection;
 using System.Collections.Generic;
+using UnityEditor;
 
 namespace NaughtyAttributes.Editor
 {
@@ -51,5 +52,31 @@ namespace NaughtyAttributes.Editor
                 return false;
             }
         }
+
+        public static bool Has(this DisplayOptions options, DisplayOptions target)
+        {
+            return ((int)options & (int)target) != 0;
+        }
+
+        public static DisplayOptions GetPosition(this DisplayOptions options) => options switch
+        {
+            var x when x.Has(DisplayOptions.OnTop) => DisplayOptions.OnTop,
+            var x when x.Has(DisplayOptions.AtBottom) => DisplayOptions.AtBottom,
+            var x when x.Has(DisplayOptions.AlongSide) => DisplayOptions.AlongSide,
+            _ => DisplayOptions.AtBottom,
+        };
+
+        public static GUILayoutOption GetHeightOption(this DisplayOptions options) => options switch
+        {
+            var x when x.Has(DisplayOptions.DoubleLineHeight) => GUILayout.Height(EditorGUIUtility.singleLineHeight * 2),
+            var x when x.Has(DisplayOptions.TripleLineHeight) => GUILayout.Height(EditorGUIUtility.singleLineHeight * 3),
+            _ => null,
+        };
+
+        public static GUILayoutOption GetWidthOption(this DisplayOptions options) => options switch
+        {
+            var x when x.Has(DisplayOptions.HalfWidth) => GUILayout.Width(EditorGUIUtility.currentViewWidth * 0.5f),
+            _ => null,
+        };
     }
 }
