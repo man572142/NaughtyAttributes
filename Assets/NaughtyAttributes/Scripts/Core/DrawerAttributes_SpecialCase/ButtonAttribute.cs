@@ -49,41 +49,53 @@ namespace NaughtyAttributes
     public class ButtonAttribute : SpecialCaseDrawerAttribute
     {
         public string Text;
-        public EButtonEnableMode SelectedEnableMode;
+        public EButtonEnableMode SelectedEnableMode = EButtonEnableMode.Always;
         public object[] Args;
         public string Method;
         public DisplayOptions DisplayOptions = DisplayOptions.Default;
 
-        public ButtonAttribute()
-        {
-            this.Text = null;
-            this.SelectedEnableMode = EButtonEnableMode.Always;
-            this.Args = null;
-            this.Method = null;
-        }
-
         public ButtonAttribute(params object[] args)
         {
-            this.Text = null;
-            this.SelectedEnableMode = EButtonEnableMode.Always;
-            this.Args = args;
-            this.Method = null;
+            Args = args;
         }
 
-        public ButtonAttribute(string text = null, params object[] args)
+        public ButtonAttribute(string textAndMethod = null, params object[] args)
         {
-            this.Text = text;
-            this.SelectedEnableMode = EButtonEnableMode.Always;
-            this.Args = args;
-            this.Method = null;
+            Text = textAndMethod;
+            Method = textAndMethod;
+            Args = args;
+        }
+
+        public ButtonAttribute(string textAndMethod = null, DisplayOptions displayOptions = DisplayOptions.Default, params object[] args)
+        {
+            Text = textAndMethod;
+            Method = textAndMethod;
+            Args = args;
+            DisplayOptions = displayOptions;
         }
 
         public ButtonAttribute(string text = null, string method = null, params object[] args)
         {
-            this.Text = text ?? method;
-            this.SelectedEnableMode = EButtonEnableMode.Always;
-            this.Args = args;
-            this.Method = method;
+            Text = text ?? method;
+            Args = args;
+            Method = method;
+        }
+
+        public ButtonAttribute(string text = null, string method = null, DisplayOptions displayOptions = DisplayOptions.Default, params object[] args)
+        {
+            Text = text ?? method;
+            Args = args;
+            Method = method;
+            DisplayOptions = displayOptions;
+        }
+
+        public ButtonAttribute(string text = null, string method = null, DisplayOptions displayOptions = DisplayOptions.Default, EButtonEnableMode enableMode = EButtonEnableMode.Always, params object[] args)
+        {
+            Text = text ?? method;
+            Args = args;
+            Method = method;
+            DisplayOptions = displayOptions;
+            SelectedEnableMode = enableMode;
         }
     }
 }
