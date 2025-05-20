@@ -279,7 +279,7 @@ namespace NaughtyAttributes.Editor
 
                 if (methodInfo != null)
                 {
-                    ExecuteButtonMethod(property.serializedObject.targetObject, methodInfo, buttonAttribute.GetUsableParameters(methodInfo));
+                    ExecuteButtonMethod(property.serializedObject.targetObject, methodInfo, buttonAttribute.GetUsableParameters(methodInfo, property));
                 }
                 else
                 {
@@ -313,7 +313,7 @@ namespace NaughtyAttributes.Editor
             return isButtonClicked;
         }
 
-        private static object[] GetUsableParameters(this ButtonAttribute buttonAttribute, MethodInfo methodInfo)
+        private static object[] GetUsableParameters(this ButtonAttribute buttonAttribute, MethodInfo methodInfo, SerializedProperty property = null)
         {
             object[] args = buttonAttribute.Args;
             var parameters = methodInfo.GetParameters();
@@ -330,6 +330,10 @@ namespace NaughtyAttributes.Editor
                     else if (parameters[i].HasDefaultValue)
                     {
                         args[i] = parameters[i].DefaultValue;
+                    }
+                    else if(property != null && i == 0)
+                    {
+                        args[i] = property.boxedValue;
                     }
                     else
                     {

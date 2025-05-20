@@ -12,6 +12,10 @@ namespace NaughtyAttributes.Test
         [Button("Field <color=yellow>AlongSide</color>", nameof(DecrementMyInt), displayOptions: DisplayOptions.AlongSide)]
         public int myInt2;
 
+        [Space]
+        [Button(nameof(LogMyInt))]
+        public string log = "MyInt is : ";
+
         [Button("Method <color=yellow>OnTop</color>", enableMode: EButtonEnableMode.Editor, displayOptions: DisplayOptions.OnTop)]
         private void IncrementMyInt()
         {
@@ -24,7 +28,7 @@ namespace NaughtyAttributes.Test
             myInt--;
         }
 
-        [Button(textAndMethod:"Method <color=yellow>FatBottom</color>", displayOptions: DisplayOptions.FatBottom)]
+        [Button(textAndMethod:"Method <color=yellow>Big</color>", displayOptions: DisplayOptions.Big)]
         private void LogMyInt(string prefix)
         {
             Debug.Log(prefix + myInt);
