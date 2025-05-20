@@ -32,17 +32,17 @@ namespace NaughtyAttributes
 
         // Position
         OnTop = 1 << 0,
-        AtBottom = 1 << 2,
-        AlongSide = 1 << 3,
+        AtBottom = 1 << 1,
+        AlongSide = 1 << 2,
 
         // Height
-        SingleLineHeight = 1 << 4,
-        DoubleLineHeight = 1 << 5,
-        TripleLineHeight = 1 << 6,
+        SingleLineHeight = 1 << 3,
+        DoubleLineHeight = 1 << 4,
+        TripleLineHeight = 1 << 5,
 
         // Width
-        FullWidth = 1 << 7,
-        HalfWidth = 1 << 8,
+        FullWidth = 1 << 6,
+        HalfWidth = 1 << 7,
     }
 
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Field, AllowMultiple = true, Inherited = true)]
