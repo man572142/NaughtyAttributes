@@ -18,32 +18,57 @@ namespace NaughtyAttributes
         Playmode
     }
 
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Field, AllowMultiple = true, Inherited = true)]
     public class ButtonAttribute : SpecialCaseDrawerAttribute
     {
-        public string Text { get; private set; }
-        public EButtonEnableMode SelectedEnableMode { get; private set; }
+        public string Text;
+        public EButtonEnableMode SelectedEnableMode = EButtonEnableMode.Always;
         public object[] Args;
+        public string Method;
+        public DisplayOptions DisplayOptions = DisplayOptions.Default;
 
         public ButtonAttribute(params object[] args)
         {
-            this.Text = null;
-            this.SelectedEnableMode = EButtonEnableMode.Always;
-            this.Args = args;
+            Args = args;
         }
 
-        public ButtonAttribute(string text = null, params object[] args)
+        public ButtonAttribute(string textAndMethod = null, params object[] args)
         {
-            this.Text = text;
-            this.SelectedEnableMode = EButtonEnableMode.Always;
-            this.Args = args;
+            Text = textAndMethod;
+            Method = textAndMethod;
+            Args = args;
         }
 
-        public ButtonAttribute(string text = null, EButtonEnableMode enabledMode = EButtonEnableMode.Always, params object[] args)
+        public ButtonAttribute(string textAndMethod = null, DisplayOptions displayOptions = DisplayOptions.Default, params object[] args)
         {
-            this.Text = text;
-            this.SelectedEnableMode = enabledMode;
-            this.Args = args;
+            Text = textAndMethod;
+            Method = textAndMethod;
+            Args = args;
+            DisplayOptions = displayOptions;
+        }
+
+        public ButtonAttribute(string text = null, string method = null, params object[] args)
+        {
+            Text = text ?? method;
+            Args = args;
+            Method = method;
+        }
+
+        public ButtonAttribute(string text = null, string method = null, DisplayOptions displayOptions = DisplayOptions.Default, params object[] args)
+        {
+            Text = text ?? method;
+            Args = args;
+            Method = method;
+            DisplayOptions = displayOptions;
+        }
+
+        public ButtonAttribute(string text = null, string method = null, DisplayOptions displayOptions = DisplayOptions.Default, EButtonEnableMode enableMode = EButtonEnableMode.Always, params object[] args)
+        {
+            Text = text ?? method;
+            Args = args;
+            Method = method;
+            DisplayOptions = displayOptions;
+            SelectedEnableMode = enableMode;
         }
     }
 }
