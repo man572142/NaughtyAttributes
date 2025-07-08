@@ -180,7 +180,7 @@ namespace NaughtyAttributes.Editor
 
         public static void BeginBoxGroup_Layout(string label = "")
         {
-            EditorGUILayout.BeginVertical(GUI.skin.box);
+            EditorGUILayout.BeginVertical(new GUIStyle("FrameBox"));
             if (!string.IsNullOrEmpty(label))
             {
                 EditorGUILayout.LabelField(label, EditorStyles.boldLabel);
