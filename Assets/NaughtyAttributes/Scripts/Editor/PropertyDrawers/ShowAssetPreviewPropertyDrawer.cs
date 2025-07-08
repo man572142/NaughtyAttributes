@@ -71,13 +71,11 @@ namespace NaughtyAttributes.Editor
             {
                 if (property.objectReferenceValue != null)
                 {
-                    Texture2D previewTexture = AssetPreview.GetAssetPreview(property.objectReferenceValue);
+                    var obj = property.objectReferenceValue is Component component ? component.gameObject : property.objectReferenceValue;
+                    Texture2D previewTexture = AssetPreview.GetAssetPreview(obj);
                     return previewTexture;
                 }
-
-                return null;
             }
-
             return null;
         }
 
