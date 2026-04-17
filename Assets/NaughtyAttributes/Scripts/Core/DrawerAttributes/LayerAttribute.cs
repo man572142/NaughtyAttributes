@@ -7,7 +7,7 @@ namespace NaughtyAttributes
     {
         public bool UseFlags { get; private set; }
 
-        public LayerAttribute(bool useFlags = false)
+        public LayerAttribute(bool useFlags = true)
         {
             UseFlags = useFlags;
         }
