@@ -8,10 +8,14 @@ namespace NaughtyAttributes.Editor
     public class LayerPropertyDrawer : PropertyDrawerBase
     {
         private const string TypeWarningMessage = "{0} must be an int or a string";
+        private const string FlagsTypeWarningMessage = "{0} must be an int when useFlags is true";
 
         protected override float GetPropertyHeight_Internal(SerializedProperty property, GUIContent label)
         {
-            bool validPropertyType = property.propertyType == SerializedPropertyType.String || property.propertyType == SerializedPropertyType.Integer;
+            bool useFlags = ((LayerAttribute)attribute).UseFlags;
+            bool validPropertyType = useFlags
+                ? property.propertyType == SerializedPropertyType.Integer
+                : property.propertyType == SerializedPropertyType.String || property.propertyType == SerializedPropertyType.Integer;
 
             return validPropertyType
                 ? GetPropertyHeight(property)
@@ -22,18 +26,36 @@ namespace NaughtyAttributes.Editor
         {
             EditorGUI.BeginProperty(rect, label, property);
 
-            switch (property.propertyType)
+            bool useFlags = ((LayerAttribute)attribute).UseFlags;
+            string[] layers = GetLayers();
+
+            if (useFlags)
             {
-                case SerializedPropertyType.String:
-                    DrawPropertyForString(rect, property, label, GetLayers());
-                    break;
-                case SerializedPropertyType.Integer:
-                    DrawPropertyForInt(rect, property, label, GetLayers());
-                    break;
-                default:
-                    string message = string.Format(TypeWarningMessage, property.name);
+                if (property.propertyType == SerializedPropertyType.Integer)
+                {
+                    DrawPropertyForIntFlags(rect, property, label, layers);
+                }
+                else
+                {
+                    string message = string.Format(FlagsTypeWarningMessage, property.name);
                     DrawDefaultPropertyAndHelpBox(rect, property, message, MessageType.Warning);
-                    break;
+                }
+            }
+            else
+            {
+                switch (property.propertyType)
+                {
+                    case SerializedPropertyType.String:
+                        DrawPropertyForString(rect, property, label, layers);
+                        break;
+                    case SerializedPropertyType.Integer:
+                        DrawPropertyForInt(rect, property, label, layers);
+                        break;
+                    default:
+                        string message = string.Format(TypeWarningMessage, property.name);
+                        DrawDefaultPropertyAndHelpBox(rect, property, message, MessageType.Warning);
+                        break;
+                }
             }
 
             EditorGUI.EndProperty();
@@ -77,6 +99,52 @@ namespace NaughtyAttributes.Editor
             {
                 property.intValue = newLayerNumber;
             }
+        }
+
+        private static void DrawPropertyForIntFlags(Rect rect, SerializedProperty property, GUIContent label, string[] layers)
+        {
+            int maskFieldValue = LayerMaskToMaskFieldMask(property.intValue, layers);
+            int newMaskFieldValue = EditorGUI.MaskField(rect, label.text, maskFieldValue, layers);
+
+            if (maskFieldValue != newMaskFieldValue)
+            {
+                property.intValue = MaskFieldMaskToLayerMask(newMaskFieldValue, layers);
+            }
+        }
+
+        // MaskField uses bit indices matching the layers array, but LayerMask bits map to actual layer indices (0-31).
+        private static int LayerMaskToMaskFieldMask(int layerMask, string[] layers)
+        {
+            if (layerMask == 0) return 0;
+            if (layerMask == -1) return -1;
+
+            int maskFieldMask = 0;
+            for (int i = 0; i < layers.Length; i++)
+            {
+                int layerIndex = LayerMask.NameToLayer(layers[i]);
+                if ((layerMask & (1 << layerIndex)) != 0)
+                {
+                    maskFieldMask |= (1 << i);
+                }
+            }
+            return maskFieldMask;
+        }
+
+        private static int MaskFieldMaskToLayerMask(int maskFieldMask, string[] layers)
+        {
+            if (maskFieldMask == 0) return 0;
+            if (maskFieldMask == -1) return -1;
+
+            int layerMask = 0;
+            for (int i = 0; i < layers.Length; i++)
+            {
+                if ((maskFieldMask & (1 << i)) != 0)
+                {
+                    int layerIndex = LayerMask.NameToLayer(layers[i]);
+                    layerMask |= (1 << layerIndex);
+                }
+            }
+            return layerMask;
         }
 
         private static int IndexOf(string[] layers, string layer)

@@ -10,6 +10,9 @@ namespace NaughtyAttributes.Test
         [Layer]
         public string layerName0;
 
+        [Layer(true)]
+        public int layerMask0;
+
         public LayerNest1 nest1;
 
         [Button]
@@ -17,6 +20,7 @@ namespace NaughtyAttributes.Test
         {
             Debug.LogFormat("{0} = {1}", nameof(layerNumber0), layerNumber0);
             Debug.LogFormat("{0} = {1}", nameof(layerName0), layerName0);
+            Debug.LogFormat("{0} = {1}", nameof(layerMask0), layerMask0);
             Debug.LogFormat("LayerToName({0}) = {1}", layerNumber0, LayerMask.LayerToName(layerNumber0));
             Debug.LogFormat("NameToLayer({0}) = {1}", layerName0, LayerMask.NameToLayer(layerName0));
         }
@@ -31,6 +35,9 @@ namespace NaughtyAttributes.Test
         [Layer]
         public string layerName1;
 
+        [Layer(true)]
+        public int layerMask1;
+
         public LayerNest2 nest2;
     }
 
@@ -42,5 +49,8 @@ namespace NaughtyAttributes.Test
 
         [Layer]
         public string layerName2;
+
+        [Layer(true)]
+        public int layerMask2;
     }
 }
